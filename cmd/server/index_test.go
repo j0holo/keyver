@@ -6,20 +6,54 @@ import (
 
 func TestNode_insert(t *testing.T) {
 	tables := []struct {
-		input *node
-		want  error
+		input  *node
+		output *node
+		error  error
 	}{
 		{&node{
 			key:   "a",
 			size:  4,
 			left:  nil,
 			right: nil,
+		}, &node{
+			key:   "a",
+			size:  4,
+			left:  nil,
+			right: nil,
 		}, keyAlreadyExists},
+
 		{&node{
 			key:   "b",
 			size:  4,
 			left:  nil,
 			right: nil,
+		}, &node{
+			key:  "a",
+			size: 4,
+			left: nil,
+			right: &node{
+				key:   "b",
+				size:  4,
+				left:  nil,
+				right: nil,
+			},
+		}, nil},
+
+		{&node{
+			key:   "b",
+			size:  4,
+			left:  nil,
+			right: nil,
+		}, &node{
+			key:  "c",
+			size: 4,
+			left: nil,
+			right: &node{
+				key:   "b",
+				size:  4,
+				left:  nil,
+				right: nil,
+			},
 		}, nil},
 	}
 
@@ -32,19 +66,30 @@ func TestNode_insert(t *testing.T) {
 		}
 
 		err := n.insert(table.input)
-		if err != table.want {
-			t.Errorf("Error: '%v', does not match wanted error: '%v'", err, table.want)
-		}
+		if err != table.error {
+			t.Errorf("Error: '%v', does not match wanted error: '%v'", err, table.error)
+			// if the key already exists there is no point in checking if an insert has been done
+		} else if table.error != keyAlreadyExists {
+			if n.left == table.output.left {
+				t.Fatalf("The left node is %v, not %v", table.input, table.output)
+			}
 
+			if n.right == table.output.right {
+				t.Fatalf("The left node is %v, not %v", table.input, table.output)
+			}
+
+			if n.left.key != table.input.key {
+				t.Errorf("The input key '%s' is not %s", table.input.key, n.left.key)
+			}
+		}
 	}
 }
 
 func TestCompareStrings(t *testing.T) {
 	tables := []struct {
-
-		first string
+		first  string
 		second string
-		want  int
+		want   int
 	}{
 		{"a", "a", equal},
 		{"a", "b", larger},

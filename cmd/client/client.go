@@ -11,7 +11,7 @@ import (
 const port = ":8181"
 
 func main() {
-	conn, err := grpc.Dial("localhost" + port, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial("localhost"+port, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func main() {
 	log.Println(r.Result)
 
 	r, err = c.Get(ctx, &pb.GetRequest{
-		Key:   "hello",
+		Key: "hello",
 	})
 	if err != nil {
 		log.Println(err)
@@ -41,7 +41,7 @@ func main() {
 
 	r, err = c.Get(ctx, &pb.GetRequest{
 		// This is not allowed, too meta for this code.
-		Key:   "key",
+		Key: "key",
 	})
 	if err != nil {
 		log.Println(err)
