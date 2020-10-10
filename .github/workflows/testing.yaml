@@ -1,4 +1,4 @@
-name: unit-tests
+name: unit-tests and benchmarks
 
 on: push
 
@@ -11,9 +11,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Print Go version
+        run: go version
+
       - name: Run go test ./...
         run: go test ./...
-
 
   benchmarks:
     name: Run the benchmarks
@@ -23,6 +25,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Print Go version
+        run: go version
 
       - name: Run go test -bench=. ./...
         run: go test -bench=. ./...
