@@ -4,6 +4,13 @@ package main
 import "errors"
 
 const (
+	maxLeavesLength      = 100
+	maxPointerPageLength = 256
+	maxKeySize           = 512        //bytes
+	maxValueSize         = 1024 << 10 // 1 megabyte
+)
+
+const (
 	equal = iota
 	larger
 	smaller
@@ -12,75 +19,91 @@ const (
 var ErrorKeyDoesNotExist = errors.New("the key does not exist")
 var ErrorKeyTooLarge = errors.New("the key is too large")
 var ErrorValueTooLarge = errors.New("the value is too large")
+var ErrorPageIsFull = errors.New("the underlying page is full")
 
 // page can be a pointerPage or leafPage
 type page interface {
-	insert(key, value string)
+	insert(key, value string) error
 	delete(key string)
 	search(key string) (leaf, error)
 }
 
 // page represents the root page or an internal page.
 type pointerPage struct {
-	smaller page
-	key     string
-	larger  page
+	keys []string
+	// pagePointers always has one element more then the number of keys.
+	pagePointers []page
 }
 
-func (pp *pointerPage) insert(key, value string) {
-	switch compareStrings(pp.key, key) {
-	case smaller:
-	case equal:
-		if pp.smaller != nil {
-			pp.smaller.insert(key, value)
-		} else {
-			pp.smaller = &leafPage{leaves: make(map[string]leaf, 1024)}
-			pp.smaller.insert(key, value)
+func (pp *pointerPage) insert(key, value string) error {
+	for i, pk := range pp.keys {
+		switch compareStrings(pk, key) {
+		case smaller:
+		case equal:
+			err := pp.pagePointers[i].insert(key, value)
+			if err == ErrorPageIsFull {
+				// TODO: split the underlying page and add the new pages to this page.
+				pp.splitChild(i)
+			} else if err != nil {
+				return err
+			}
+			break
+		case larger:
+			if len(pp.keys) == i {
+				err := pp.pagePointers[len(pp.pagePointers)-1].insert(key, value)
+				if err == ErrorPageIsFull {
+
+				} else if err != nil {
+					return err
+				} else {
+
+				}
+			}
+			break
 		}
-		break
-	case larger:
-		if pp.larger != nil {
-			pp.larger.insert(key, value)
-		} else {
-			pp.larger = &leafPage{leaves: make(map[string]leaf, 1024)}
-			pp.larger.insert(key, value)
-		}
-		break
+	}
+	return nil
+}
+
+func (pp *pointerPage) splitChild(i int) {
+	// This gives an error that pointerPage does not implement the page interface.
+	if _, ok := pp.pagePointers[i].(pointerPage); ok {
+		pp.pagePointers[i].keys[]
 	}
 
 }
 
 func (pp *pointerPage) delete(key string) {
-	switch compareStrings(pp.key, key) {
-	case smaller:
-	case equal:
-		if pp.smaller != nil {
-			 pp.smaller.delete(key)
+	for i, pk := range pp.keys {
+		switch compareStrings(pk, key) {
+		case smaller:
+		case equal:
+			pp.pagePointers[i].delete(key)
+			break
+		case larger:
+			if len(pp.keys) == i {
+				pp.pagePointers[len(pp.pagePointers)-1].delete(key)
+			}
+			break
 		}
-		break
-	case larger:
-		if pp.larger != nil {
-			pp.larger.delete(key)
-		}
-		break
 	}
 }
 
 func (pp *pointerPage) search(key string) (leaf, error) {
 	var leaf leaf
 	var err error
-	switch compareStrings(pp.key, key) {
-	case smaller:
-	case equal:
-		if pp.smaller != nil {
-			leaf, err = pp.smaller.search(key)
+	for i, pk := range pp.keys {
+		switch compareStrings(pk, key) {
+		case smaller:
+		case equal:
+			leaf, err = pp.pagePointers[i].search(key)
+			break
+		case larger:
+			if len(pp.keys) == i {
+				leaf, err = pp.pagePointers[len(pp.pagePointers)-1].search(key)
+			}
+			break
 		}
-		break
-	case larger:
-		if pp.larger != nil {
-			leaf, err = pp.larger.search(key)
-		}
-		break
 	}
 
 	return leaf, err
@@ -91,8 +114,9 @@ type leafPage struct {
 	leaves map[string]leaf
 }
 
-func (lp *leafPage) insert(key, value string) {
+func (lp *leafPage) insert(key, value string) error {
 	lp.leaves[key] = leaf{key, value}
+	return nil
 }
 
 func (lp *leafPage) delete(key string) {

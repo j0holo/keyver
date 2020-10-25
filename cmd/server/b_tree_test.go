@@ -131,3 +131,26 @@ func TestLeafPageSearch(t *testing.T) {
 		}
 	}
 }
+
+func TestPointerPageInsert(t *testing.T) {
+	tables := []struct {
+		name string
+		key string
+		value string
+		input pointerPage
+		output pointerPage
+	}{
+		{
+
+		},
+	}
+
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			table.input.insert(table.key, table.value)
+			if !reflect.DeepEqual(table.input, table.output) {
+				t.Errorf("pointerPage is %+v, wants %+v", table.input, table.output)
+			}
+		})
+	}
+}
